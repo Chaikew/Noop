@@ -1,5 +1,5 @@
 ## Acrobatic Overwriting
-This repo contains some C x86/x64 trash code that can be used to "replace C functions".
+This repo contains some C x86/x64 trash code that can be used to "overwrite C functions".
 
 ### Limitations
 - #### x64 (Windows/Linux)
@@ -10,7 +10,7 @@ This repo contains some C x86/x64 trash code that can be used to "replace C func
   - It covers all functions (*that have at least 7 bytes*). So technically it can be used to replace any C function in a program since: `void noop(void) {}` is 20 bytes long.
 -  Other platforms are not supported.
 
-### How it works
+### How it works?
 It works by overwriting the first __"jump code size"__ bytes of the function with a jump to the target code.
 ```asm
 // x64
@@ -22,7 +22,7 @@ mov eax, 0xdeadbeef
 jmp eax
 ```
 
-### How to use it
+### How to use it?
 ```c
 //jump.h
 
