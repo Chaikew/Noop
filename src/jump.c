@@ -38,10 +38,11 @@ void WriteJump(void* at, void* to);
 
 #if defined(__x86_64__)
 /* 64 bit detected */
-void WriteJump(void* at, void* to) {
-    #define JUMP_CODE_SIZE 12
 
-    unsigned long long int jumpAddr = (uintptr_t)(to);
+#define JUMP_CODE_SIZE 12
+
+void WriteJump(void* at, void* to) {
+    unsigned long int jumpAddr = (uintptr_t)(to);
 
     // jumpAddr = 0xddccbbaadeadbeef
     char ef = (char)(jumpAddr & 0xFF);  // lowest byte
@@ -86,10 +87,10 @@ void WriteJump(void* at, void* to) {
 #elif defined(__i386__)
 /* 32 bit x86 detected */
 
-void WriteJump(void* at, void* to) {
-    #define JUMP_CODE_SIZE 7
+#define JUMP_CODE_SIZE 7
 
-    unsigned long long int jumpAddr = (uintptr_t)(to);
+void WriteJump(void* at, void* to) {
+    unsigned int jumpAddr = (uintptr_t)(to);
 
     // jumpAddr = 0xddccbbaadeadbeef
     char ef = (char)(jumpAddr & 0xFF);  // lowest byte
