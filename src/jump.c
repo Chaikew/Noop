@@ -3,19 +3,14 @@
 
 #include "jump.h"
 
-#if !__x86_64__
-    /* not 64-bit */
-    #error "This code is only for 64-bit systems :/"
-#endif
-
 static inline int __mprotect(void *__addr, size_t __len, int __prot);
 
-#ifdef __linux__
+#if defined(__linux__)
 #include <sys/mman.h>
 #include <unistd.h>
 
-#define PAGE_EXECUTE_READWRITE PROT_EXEC | PROT_READ | PROT_WRITE
-#define PAGE_EXECUTE_READ PROT_EXEC | PROT_READ
+#define PAGE_EXECUTE_READWRITE (PROT_EXEC | PROT_READ | PROT_WRITE)
+#define PAGE_EXECUTE_READ (PROT_EXEC | PROT_READ)
 
 static inline int __mprotect(void *__addr, size_t __len, int __prot) {
     //  Find page size for this system.
@@ -31,7 +26,7 @@ static inline int __mprotect(void *__addr, size_t __len, int __prot) {
     // do mprotect
     return mprotect((void *) pagestart, end - pagestart, __prot);
 }
-#elif _WIN32
+#elif defined(_WIN32)
 #include <memoryapi.h>
 static inline int __mprotect(void *__addr, size_t __len, int __prot) {
     DWORD oldProtect;
@@ -39,17 +34,12 @@ static inline int __mprotect(void *__addr, size_t __len, int __prot) {
 }
 #endif
 
+void WriteJump(void* at, void* to);
 
-
-int InsertJump(void* at, void* to) {
+#if defined(__x86_64__)
+/* 64 bit detected */
+void WriteJump(void* at, void* to) {
     #define JUMP_CODE_SIZE 12
-
-    //  make it writable
-    if (__mprotect(at, JUMP_CODE_SIZE, PAGE_EXECUTE_READWRITE)) {
-        return -1;
-    }
-
-    // ===== jump insert start =====
 
     unsigned long long int jumpAddr = (uintptr_t)(to);
 
@@ -74,8 +64,7 @@ int InsertJump(void* at, void* to) {
     // Code understanding note:
     // a dummy address has been chosen to name
     // the address bytes in order to avoid confusion:
-    // 0xddccbbaadeadbeef in 64bit (here)
-    // 0xdeadbeef in 32bit (not here)
+    // 0xddccbbaadeadbeef
 
     // "jump" code using the dummy address:
     //
@@ -93,9 +82,57 @@ int InsertJump(void* at, void* to) {
 
     // copy the instructions to the address (don't forget to mprotect to allow write)
     memcpy(at, instructions, instructionsSize);
+}
+#elif defined(__i386__)
+/* 32 bit x86 detected */
 
-    // ===== jump insert end =====
+void WriteJump(void* at, void* to) {
+    #define JUMP_CODE_SIZE 7
 
+    unsigned long long int jumpAddr = (uintptr_t)(to);
+
+    // jumpAddr = 0xddccbbaadeadbeef
+    char ef = (char)(jumpAddr & 0xFF);  // lowest byte
+    char be = (char)(jumpAddr >> 8 & 0xFF);
+    char ad = (char)(jumpAddr >> 16 & 0xFF);
+    char de = (char)(jumpAddr >> 24 & 0xFF); // highest 32bit byte
+
+    // https://defuse.ca/online-x86-assembler.htm#disassembly2
+
+    // Code understanding note:
+    // a dummy address has been chosen to name
+    // the address bytes in order to avoid confusion:
+    // 0xdeadbeef
+
+    // "jump" code using the dummy address:
+    //
+    // 0:  b8 ef be ad de          mov    eax,0xdeadbeef
+    // 5:  ff e0                   jmp    eax
+    //
+
+    char instructions[JUMP_CODE_SIZE] = {
+            (char)0xb8, (char)ef, (char)be, (char)ad, (char)de,     // mov eax, 0x...
+            (char)0xff, (char)0xe0,                                 // jmp eax
+    };
+
+    // copy the instructions to the address (don't forget to mprotect to allow write)
+    memcpy(at, instructions, JUMP_CODE_SIZE);
+}
+#else
+/* not x86 */
+#error "This code is only for x86 and x64 systems :/"
+#endif
+
+
+
+int InsertJump(void* at, void* to) {
+    //  make it writable
+    if (__mprotect(at, JUMP_CODE_SIZE, PAGE_EXECUTE_READWRITE)) {
+        return -1;
+    }
+
+
+    WriteJump(at, to);
 
 
     //  make it not writable

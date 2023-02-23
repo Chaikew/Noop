@@ -1,10 +1,15 @@
 #include <stdio.h>
 #include "jump.h"
 
-void hook(void) {
+char* hook(void) {
+    printf("Hooked called!\n");
+    return "hook_result";
 }
 
-void original(void) {}
+char* original(void) {
+    printf("Original called!\n");
+    return "original_result";
+}
 
 int main() {
     if (InsertJump(&original, &hook) == 0) {
@@ -12,8 +17,8 @@ int main() {
     } else {
         printf("Failed to hook original(void) :/ \n");
     }
-    
-    //int rv = original();
-    //printf("original() returned %d\n", rv);
+
+    char* rv = original();
+    printf("original() returned \"%s\"\n", rv);
     return 0;
 }
