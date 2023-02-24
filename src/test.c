@@ -1,5 +1,5 @@
 #include <stdio.h>
-#include "jump.h"
+#include "jump/jump.h"
 
 char* hook(void) {
     printf("Hooked called!\n");
