@@ -24,12 +24,8 @@ jmp eax
 
 ### How to use it?
 ```c
-//jump.h
+#include "jump.h"
 
-/**
- * @brief Overwrites the first few bytes of a function with a jump to the target code.
- * @param at The function to overwrite.
- * @param to The target code (0xdeadbeefdeadbeef).
- */
-int InsertJump(void* at, void* to);
+// were "original" will be replaced with "hook"
+InsertJump(&original, &hook);
 ```
